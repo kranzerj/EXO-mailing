@@ -1,8 +1,22 @@
 param([string]$Path = ".")
 
-# Zuerst alle .gz entpacken
+# --- ZIP-Dateien entpacken ---
+Get-ChildItem -Path $Path -Filter "*.zip" | ForEach-Object {
+    Write-Host "Entpacke ZIP: $($_.Name)" -ForegroundColor Cyan
+    
+    try {
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        [System.IO.Compression.ZipFile]::ExtractToDirectory($_.FullName, $Path)
+        Remove-Item $_.FullName -Force
+        Write-Host "  -> Entpackt und Archiv gelöscht" -ForegroundColor Green
+    } catch {
+        Write-Host "  -> FEHLER: $_" -ForegroundColor Red
+    }
+}
+
+# --- GZ-Dateien entpacken ---
 Get-ChildItem -Path $Path -Filter "*.gz" | ForEach-Object {
-    Write-Host "Entpacke: $($_.Name)" -ForegroundColor Cyan
+    Write-Host "Entpacke GZ: $($_.Name)" -ForegroundColor Cyan
     
     $gzFile = $_.FullName
     $xmlFile = $gzFile -replace '\.gz$', ''
@@ -16,7 +30,6 @@ Get-ChildItem -Path $Path -Filter "*.gz" | ForEach-Object {
         $gzip.Close()
         $stream.Close()
         
-        # Erfolgreich entpackt - lösche .gz
         Remove-Item $gzFile -Force
         Write-Host "  -> Entpackt und Archiv gelöscht" -ForegroundColor Green
     } catch {
@@ -24,7 +37,7 @@ Get-ChildItem -Path $Path -Filter "*.gz" | ForEach-Object {
     }
 }
 
-# Jetzt die Analyse mit den XML Files
+# --- Analyse der XML Files ---
 $results = @{
     Total = 0
     PassPass = 0
